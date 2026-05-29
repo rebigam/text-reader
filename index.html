@@ -3,96 +3,141 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Text Reader — EN / RO</title>
+<title>Text Reader — Natural Voice (EN / RO)</title>
 <style>
   :root{
     --bg:#0f1115; --panel:#171a21; --panel2:#1f242d; --line:#2a313c;
     --txt:#e7ecf3; --muted:#9aa6b6; --accent:#4f8cff; --accent2:#36c08e;
-    --hl:#3b5bdb; --hlbg:#fff3b0; --hltxt:#1a1a1a;
+    --hlbg:#fff3b0; --hltxt:#1a1a1a;
   }
   *{box-sizing:border-box}
   body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
        background:var(--bg);color:var(--txt);min-height:100vh;display:flex;flex-direction:column}
-  header{padding:18px 24px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px}
+  header{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px}
   header h1{font-size:18px;margin:0;font-weight:600}
-  header .sub{color:var(--muted);font-size:13px}
-  main{flex:1;display:flex;flex-direction:column;gap:16px;padding:20px 24px;max-width:1000px;width:100%;margin:0 auto}
-  .controls{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;background:var(--panel);
-            border:1px solid var(--line);border-radius:14px;padding:16px}
+  header .sub{color:var(--muted);font-size:12px}
+  main{flex:1;display:flex;flex-direction:column;gap:14px;padding:16px 20px;max-width:1000px;width:100%;margin:0 auto}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}
+  .controls{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end}
   .field{display:flex;flex-direction:column;gap:6px}
-  .field label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
-  select,input[type=range]{accent-color:var(--accent)}
-  select{background:var(--panel2);color:var(--txt);border:1px solid var(--line);border-radius:8px;
-         padding:9px 10px;font-size:14px;min-width:200px}
+  .field label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  select,input{accent-color:var(--accent)}
+  select,input[type=text],input[type=url],input[type=password]{background:var(--panel2);color:var(--txt);
+         border:1px solid var(--line);border-radius:8px;padding:10px;font-size:14px}
+  select{min-width:150px}
   .range{display:flex;align-items:center;gap:10px}
-  .range output{font-variant-numeric:tabular-nums;color:var(--muted);min-width:38px;text-align:right;font-size:13px}
+  .range output{font-variant-numeric:tabular-nums;color:var(--muted);min-width:42px;text-align:right;font-size:13px}
   .seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
-  .seg button{background:var(--panel2);color:var(--muted);border:0;padding:9px 14px;font-size:13px;cursor:pointer}
+  .seg button{background:var(--panel2);color:var(--muted);border:0;padding:10px 14px;font-size:13px;cursor:pointer}
   .seg button.active{background:var(--accent);color:#fff}
-  textarea{width:100%;min-height:200px;resize:vertical;background:var(--panel);color:var(--txt);
-           border:1px solid var(--line);border-radius:14px;padding:16px;font-size:16px;line-height:1.6;font-family:inherit}
-  .reading{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;
+  textarea{width:100%;min-height:170px;resize:vertical;background:var(--panel);color:var(--txt);
+           border:1px solid var(--line);border-radius:14px;padding:14px;font-size:16px;line-height:1.6;font-family:inherit}
+  .reading{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;
            font-size:18px;line-height:1.75;display:none}
   .reading.on{display:block}
-  .reading .s{transition:background .15s}
-  .reading .s.cur{background:var(--hlbg);color:var(--hltxt);border-radius:4px;padding:1px 2px}
+  .reading .s.cur{background:var(--hlbg);color:var(--hltxt);border-radius:4px;padding:1px 3px}
   .buttons{display:flex;gap:10px;flex-wrap:wrap}
-  .btn{border:0;border-radius:10px;padding:12px 20px;font-size:15px;font-weight:600;cursor:pointer;color:#fff}
+  .btn{border:0;border-radius:10px;padding:13px 20px;font-size:15px;font-weight:600;cursor:pointer;color:#fff}
   .btn:disabled{opacity:.4;cursor:not-allowed}
   .btn.play{background:var(--accent2)} .btn.pause{background:#d9a441} .btn.stop{background:#e05a5a}
   .btn.ghost{background:var(--panel2);color:var(--txt);border:1px solid var(--line)}
   .hint{color:var(--muted);font-size:13px}
-  .row{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;justify-content:space-between}
-  .warn{color:#e0a14a;font-size:13px;display:none}
-  .warn.on{display:block}
+  .row{display:flex;gap:14px;flex-wrap:wrap;align-items:center;justify-content:space-between}
   .urlbar{display:flex;gap:10px;flex-wrap:wrap}
-  .urlbar input{flex:1;min-width:240px;background:var(--panel);color:var(--txt);border:1px solid var(--line);
-                border-radius:10px;padding:12px 14px;font-size:15px}
-  .urlbar .btn{padding:12px 16px;font-size:14px}
+  .urlbar input{flex:1;min-width:220px;font-size:15px}
+  .premium{display:none;flex-wrap:wrap;gap:14px;align-items:flex-end}
+  .premium.on{display:flex}
+  .key{flex:1;min-width:240px}
+  .warn{color:#e0a14a;font-size:13px;display:none} .warn.on{display:block}
+  .pill{font-size:12px;color:var(--muted);background:var(--panel2);border:1px solid var(--line);
+        border-radius:20px;padding:4px 10px}
+  a{color:var(--accent)}
 </style>
 </head>
 <body>
 <header>
-  <span style="font-size:22px">🔊</span>
+  <span style="font-size:22px">🎧</span>
   <div>
     <h1>Text Reader</h1>
-    <div class="sub">Citește text cu voce — English &amp; Română · rulează local, zero cost</div>
+    <div class="sub">Voce naturală · English &amp; Română · citește din link sau text</div>
   </div>
 </header>
 
 <main>
-  <div class="controls">
-    <div class="field">
-      <label>Limbă</label>
-      <div class="seg" id="langSeg">
-        <button data-lang="auto" class="active">Auto</button>
-        <button data-lang="en">English</button>
-        <button data-lang="ro">Română</button>
+  <!-- VOICE ENGINE -->
+  <div class="card">
+    <div class="controls">
+      <div class="field">
+        <label>Motor voce</label>
+        <div class="seg" id="engineSeg">
+          <button data-eng="openai" class="active">🤖 AI premium (natural)</button>
+          <button data-eng="free">📱 Gratuit (telefon)</button>
+        </div>
+      </div>
+      <div class="field" id="rateField">
+        <label>Viteză</label>
+        <div class="range"><input id="rate" type="range" min="0.5" max="2" step="0.05" value="1"><output id="rateOut">1.00×</output></div>
       </div>
     </div>
-    <div class="field">
-      <label>Voce</label>
-      <select id="voice"></select>
+
+    <!-- OpenAI settings -->
+    <div class="premium on" id="premiumBox" style="margin-top:14px">
+      <div class="field key">
+        <label>Cheia ta OpenAI (rămâne doar pe acest telefon)</label>
+        <input id="apiKey" type="password" placeholder="sk-..." autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Voce</label>
+        <select id="oaVoice">
+          <option value="nova">Nova (caldă, f. naturală)</option>
+          <option value="shimmer">Shimmer</option>
+          <option value="alloy">Alloy</option>
+          <option value="echo">Echo</option>
+          <option value="fable">Fable</option>
+          <option value="onyx">Onyx (gravă)</option>
+          <option value="coral">Coral</option>
+          <option value="sage">Sage</option>
+          <option value="ballad">Ballad</option>
+          <option value="ash">Ash</option>
+          <option value="verse">Verse</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Model</label>
+        <select id="oaModel">
+          <option value="gpt-4o-mini-tts">gpt-4o-mini-tts (cel mai natural, ca ChatGPT)</option>
+          <option value="tts-1">tts-1 (mai ieftin)</option>
+          <option value="tts-1-hd">tts-1-hd (HD)</option>
+        </select>
+      </div>
     </div>
-    <div class="field">
-      <label>Viteză</label>
-      <div class="range"><input id="rate" type="range" min="0.5" max="2" step="0.05" value="1"><output id="rateOut">1.00×</output></div>
+
+    <!-- Free settings -->
+    <div class="premium" id="freeBox" style="margin-top:14px">
+      <div class="field">
+        <label>Limbă</label>
+        <div class="seg" id="langSeg">
+          <button data-lang="auto" class="active">Auto</button>
+          <button data-lang="en">English</button>
+          <button data-lang="ro">Română</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Voce</label>
+        <select id="voice"></select>
+      </div>
     </div>
-    <div class="field">
-      <label>Ton</label>
-      <div class="range"><input id="pitch" type="range" min="0" max="2" step="0.1" value="1"><output id="pitchOut">1.0</output></div>
-    </div>
+    <div class="warn" id="warn" style="margin-top:10px"></div>
   </div>
 
-  <div class="warn" id="warn"></div>
-
+  <!-- URL -->
   <div class="urlbar">
-    <input id="url" type="url" placeholder="Lipește un link de articol/blog (https://…) și apasă Preia" />
-    <button class="btn ghost" id="fetch">⬇ Preia articolul</button>
+    <input id="url" type="url" placeholder="Lipește link de articol/Substack (https://…)">
+    <button class="btn ghost" id="fetch">⬇ Preia</button>
     <button class="btn play" id="fetchPlay">⬇▶ Preia &amp; Citește</button>
   </div>
 
-  <textarea id="text" placeholder="Lipește sau scrie textul aici — sau preia dintr-un link mai sus. (orice limbă; pe Auto detectez engleză/română per propoziție)"></textarea>
+  <textarea id="text" placeholder="Lipește text aici sau preia dintr-un link mai sus."></textarea>
   <div class="reading" id="reading"></div>
 
   <div class="row">
@@ -102,213 +147,202 @@
       <button class="btn stop"  id="stop"  disabled>⏹ Stop</button>
       <button class="btn ghost" id="clear">Golește</button>
     </div>
-    <div class="hint" id="status">Pregătit.</div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <span class="pill" id="cost">—</span>
+      <span class="hint" id="status">Pregătit.</span>
+    </div>
   </div>
-  <div class="hint">Sfat: dacă lipsesc voci românești, instalează-le în macOS → System Settings → Accessibility → Spoken Content → System Voice → Manage Voices (caută „Ioana" / Romanian).</div>
+  <div class="hint" id="setupHint"></div>
 </main>
+
+<audio id="audio" style="display:none"></audio>
 
 <script>
 const synth = window.speechSynthesis;
 const $ = id => document.getElementById(id);
-const els = {text:$('text'),reading:$('reading'),voice:$('voice'),rate:$('rate'),pitch:$('pitch'),
-  rateOut:$('rateOut'),pitchOut:$('pitchOut'),play:$('play'),pause:$('pause'),stop:$('stop'),
-  clear:$('clear'),status:$('status'),warn:$('warn'),url:$('url'),fetch:$('fetch'),fetchPlay:$('fetchPlay')};
-let voices=[], lang='auto', sentences=[], idx=0, speaking=false, paused=false;
+const E = {};
+['text','reading','voice','rate','rateOut','play','pause','stop','clear','status','warn',
+ 'url','fetch','fetchPlay','apiKey','oaVoice','oaModel','premiumBox','freeBox','cost','setupHint','audio']
+ .forEach(k=>E[k]=$(k));
 
-// ---- persistence ----
-els.text.value = localStorage.getItem('tr_text')||'';
-els.rate.value = localStorage.getItem('tr_rate')||'1';
-els.pitch.value= localStorage.getItem('tr_pitch')||'1';
-lang = localStorage.getItem('tr_lang')||'auto';
-syncLangSeg(); syncRangeOut();
+let engine = localStorage.getItem('tr_engine')||'openai';
+let lang   = localStorage.getItem('tr_lang')||'auto';
+let voices = [];
+let speaking=false, paused=false;
 
-function syncRangeOut(){els.rateOut.textContent=(+els.rate.value).toFixed(2)+'×';els.pitchOut.textContent=(+els.pitch.value).toFixed(1);}
+// ---------- persistence ----------
+E.text.value  = localStorage.getItem('tr_text')||'';
+E.url.value   = localStorage.getItem('tr_url')||'';
+E.rate.value  = localStorage.getItem('tr_rate')||'1';
+E.apiKey.value= localStorage.getItem('tr_oa_key')||'';
+E.oaVoice.value=localStorage.getItem('tr_oa_voice')||'nova';
+E.oaModel.value=localStorage.getItem('tr_oa_model')||'gpt-4o-mini-tts';
+syncRate(); syncEngine(); syncLangSeg();
+
+function syncRate(){E.rateOut.textContent=(+E.rate.value).toFixed(2)+'×';}
+function syncEngine(){
+  document.querySelectorAll('#engineSeg button').forEach(b=>b.classList.toggle('active',b.dataset.eng===engine));
+  E.premiumBox.classList.toggle('on',engine==='openai');
+  E.freeBox.classList.toggle('on',engine==='free');
+  E.setupHint.innerHTML = engine==='openai'
+    ? 'Ai nevoie de o cheie API de la <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com/api-keys</a> (cont OpenAI + câțiva $ credit). Cheia se salvează doar pe acest telefon. Cost ~0.15–0.45$/articol.'
+    : 'Voce gratuită din telefon. Pe Android: Settings → Accessibility → Text-to-speech pentru voci mai bune.';
+  checkWarn();
+}
 function syncLangSeg(){document.querySelectorAll('#langSeg button').forEach(b=>b.classList.toggle('active',b.dataset.lang===lang));}
 
-// ---- voices ----
-function loadVoices(){
-  voices = synth.getVoices();
-  populateVoices();
-  checkRoVoice();
-}
-synth.onvoiceschanged = loadVoices;
-loadVoices();
-
-function voicesFor(l){
-  if(l==='auto') return voices;
-  const p = l==='ro' ? 'ro' : 'en';
-  return voices.filter(v=>v.lang.toLowerCase().startsWith(p));
-}
+// ---------- free voices ----------
+function loadVoices(){voices=synth.getVoices();populateVoices();checkWarn();}
+synth.onvoiceschanged=loadVoices; loadVoices(); setTimeout(loadVoices,400);
+function voicesFor(l){const p=l==='ro'?'ro':'en';return voices.filter(v=>v.lang.toLowerCase().startsWith(p));}
 function populateVoices(){
-  const list = lang==='auto' ? voices : voicesFor(lang);
-  const prev = els.voice.value;
-  els.voice.innerHTML='';
-  (list.length?list:voices).forEach(v=>{
-    const o=document.createElement('option');
-    o.value=v.name; o.textContent=`${v.name} — ${v.lang}${v.default?' (default)':''}`;
-    els.voice.appendChild(o);
-  });
-  if([...els.voice.options].some(o=>o.value===prev)) els.voice.value=prev;
+  const list=lang==='auto'?voices:voicesFor(lang); const prev=E.voice.value; E.voice.innerHTML='';
+  (list.length?list:voices).forEach(v=>{const o=document.createElement('option');
+    o.value=v.name;o.textContent=`${v.name} — ${v.lang}${v.default?' (default)':''}`;E.voice.appendChild(o);});
+  if([...E.voice.options].some(o=>o.value===prev))E.voice.value=prev;
 }
-function checkRoVoice(){
-  const hasRo = voices.some(v=>v.lang.toLowerCase().startsWith('ro'));
-  if(!hasRo){els.warn.classList.add('on');
-    els.warn.textContent='⚠ Nicio voce românească găsită în acest browser. Pe macOS instaleaz-o din System Settings → Accessibility → Spoken Content → Manage Voices (Romanian / „Ioana"). Engleza funcționează deja.';}
-  else els.warn.classList.remove('on');
+function checkWarn(){
+  if(engine!=='free'){E.warn.classList.remove('on');return;}
+  const hasRo=voices.some(v=>v.lang.toLowerCase().startsWith('ro'));
+  if(!hasRo){E.warn.classList.add('on');E.warn.textContent='⚠ Nicio voce românească în acest browser. Engleza merge; pentru română instaleaz-o din setările telefonului (Text-to-speech).';}
+  else E.warn.classList.remove('on');
 }
 
-// ---- language detection (per sentence) ----
-const RO_HINT=/[ăâîșțşţ]|\b(și|să|nu|este|sunt|pentru|această|acest|dacă|mai|când|foarte|trebuie|noi|tău|meu)\b/i;
-function detectLang(s){return RO_HINT.test(s)?'ro':'en';}
-
-// ---- split into sentences ----
-function splitSentences(t){
-  return t.replace(/\s+/g,' ').match(/[^.!?…]+[.!?…]*\s*|\S+$/g)?.map(s=>s.trim()).filter(Boolean)||[];
-}
-function pickVoice(forLang){
-  // explicit voice chosen and compatible? else best match for forLang
-  const chosen = voices.find(v=>v.name===els.voice.value);
-  if(lang!=='auto' && chosen) return chosen;
-  if(lang==='auto'){
-    const cands = voicesFor(forLang);
-    // prefer a high-quality / non-default if available
-    return cands.find(v=>/Ioana|Samantha|Daniel|Alex|Karen|Serena/i.test(v.name)) || cands[0] || chosen || voices[0];
-  }
-  return chosen || voices[0];
-}
-
-// ---- rendering highlight ----
-function renderReading(){
-  els.reading.classList.add('on');
-  els.reading.innerHTML = sentences.map((s,i)=>`<span class="s" data-i="${i}">${escapeHtml(s)} </span>`).join('');
-}
+// ---------- text utils ----------
+const RO_HINT=/[ăâîșțşţ]|\b(și|să|nu|este|sunt|pentru|această|dacă|când|foarte|trebuie)\b/i;
+const detect=s=>RO_HINT.test(s)?'ro':'en';
+function splitSentences(t){return t.replace(/\s+/g,' ').match(/[^.!?…]+[.!?…]*\s*|\S+$/g)?.map(s=>s.trim()).filter(Boolean)||[];}
 function escapeHtml(s){return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+
+let units=[];
+function renderReading(arr){
+  E.reading.classList.add('on');
+  E.reading.innerHTML=arr.map((s,i)=>`<span class="s" data-i="${i}">${escapeHtml(s)} </span>`).join('');
+  units=arr.map((s,i)=>({text:s,el:E.reading.querySelector(`.s[data-i="${i}"]`)}));
+}
 function highlight(i){
-  els.reading.querySelectorAll('.s.cur').forEach(e=>e.classList.remove('cur'));
-  const cur=els.reading.querySelector(`.s[data-i="${i}"]`);
-  if(cur){cur.classList.add('cur');cur.scrollIntoView({block:'center',behavior:'smooth'});}
+  E.reading.querySelectorAll('.s.cur').forEach(e=>e.classList.remove('cur'));
+  const c=units[i]&&units[i].el; if(c){c.classList.add('cur');c.scrollIntoView({block:'center',behavior:'smooth'});}
+}
+function showCost(chars){
+  if(engine!=='openai'){E.cost.textContent='gratuit';return;}
+  const m=E.oaModel.value; const per = m==='tts-1-hd'?0.030:0.015;
+  E.cost.textContent=`~${chars} car · ~$${(chars/1000*per).toFixed(2)}`;
 }
 
-// ---- playback ----
-function speakNext(){
-  if(idx>=sentences.length){finish();return;}
-  const s=sentences[idx];
-  const u=new SpeechSynthesisUtterance(s);
-  const fl = lang==='auto'?detectLang(s):lang;
-  const v=pickVoice(fl);
-  if(v){u.voice=v;u.lang=v.lang;}
-  u.rate=+els.rate.value; u.pitch=+els.pitch.value;
-  u.onstart=()=>{highlight(idx);els.status.textContent=`Citește… ${idx+1}/${sentences.length} (${fl.toUpperCase()})`;};
-  u.onend=()=>{idx++;if(speaking)speakNext();};
-  u.onerror=e=>{if(e.error!=='interrupted'){idx++;if(speaking)speakNext();}};
+// ===================== FREE (browser) playback =====================
+let fIdx=0;
+function freeStart(){
+  const arr=splitSentences(E.text.value.trim()); if(!arr.length){E.status.textContent='Nu e text.';return;}
+  synth.cancel(); renderReading(arr); fIdx=0; speaking=true; paused=false; armButtons(true);
+  freeNext();
+}
+function freeNext(){
+  if(fIdx>=units.length)return finish();
+  const s=units[fIdx].text, u=new SpeechSynthesisUtterance(s);
+  const fl=lang==='auto'?detect(s):lang;
+  const v=(lang!=='auto'&&voices.find(x=>x.name===E.voice.value))||voicesFor(fl).find(x=>/Ioana|Samantha|Daniel|Alex|Karen/i.test(x.name))||voicesFor(fl)[0]||voices.find(x=>x.name===E.voice.value)||voices[0];
+  if(v){u.voice=v;u.lang=v.lang;} u.rate=+E.rate.value;
+  u.onstart=()=>{highlight(fIdx);E.status.textContent=`Citește ${fIdx+1}/${units.length} (${fl.toUpperCase()})`;};
+  u.onend=()=>{fIdx++;if(speaking)freeNext();};
+  u.onerror=e=>{if(e.error!=='interrupted'){fIdx++;if(speaking)freeNext();}};
   synth.speak(u);
 }
-function start(){
-  const t=els.text.value.trim();
-  if(!t){els.status.textContent='Nu e text de citit.';return;}
-  synth.cancel();
-  sentences=splitSentences(t); idx=0; speaking=true; paused=false;
-  renderReading();
-  els.play.disabled=true; els.pause.disabled=false; els.stop.disabled=false; els.pause.textContent='⏸ Pauză';
-  speakNext();
+
+// ===================== OPENAI playback =====================
+let chunks=[], oi=0, cache={};
+function buildChunks(t){
+  const sents=splitSentences(t); const out=[]; let cur='';
+  for(const s of sents){ if((cur+' '+s).length>3800 && cur){out.push(cur.trim());cur=s;} else cur+=' '+s; }
+  if(cur.trim())out.push(cur.trim()); return out;
 }
-function finish(){
-  speaking=false;paused=false;
-  els.play.disabled=false;els.pause.disabled=true;els.stop.disabled=true;
-  els.status.textContent='Gata.';
-  els.reading.querySelectorAll('.s.cur').forEach(e=>e.classList.remove('cur'));
+async function tts(i){
+  if(cache[i])return cache[i];
+  const key=E.apiKey.value.trim();
+  const body={model:E.oaModel.value,input:chunks[i],voice:E.oaVoice.value,response_format:'mp3'};
+  const r=await fetch('https://api.openai.com/v1/audio/speech',{method:'POST',
+    headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(!r.ok){let msg=r.status+''; try{msg=(await r.json()).error.message;}catch(e){} throw new Error(msg);}
+  const url=URL.createObjectURL(await r.blob()); cache[i]=url; return url;
 }
+async function oaStart(){
+  const key=E.apiKey.value.trim();
+  if(!key){E.status.textContent='Pune cheia OpenAI întâi (sus).';E.apiKey.focus();return;}
+  const t=E.text.value.trim(); if(!t){E.status.textContent='Nu e text.';return;}
+  chunks=buildChunks(t); renderReading(chunks); oi=0; cache={}; speaking=true; paused=false; armButtons(true);
+  showCost(t.length);
+  oaPlay(0);
+}
+async function oaPlay(i){
+  if(i>=chunks.length)return finish();
+  oi=i; highlight(i); E.status.textContent=`Sintetizez ${i+1}/${chunks.length}…`;
+  let url; try{url=await tts(i);}catch(e){speaking=false;armButtons(false);E.status.textContent='Eroare OpenAI: '+e.message;return;}
+  if(!speaking)return;
+  E.audio.src=url; E.audio.playbackRate=+E.rate.value;
+  E.status.textContent=`Citește ${i+1}/${chunks.length}`;
+  try{await E.audio.play();}catch(e){}
+  if(i+1<chunks.length)tts(i+1).catch(()=>{});
+}
+E.audio.onended=()=>{ if(speaking&&engine==='openai')oaPlay(oi+1); };
+
+// ===================== unified controls =====================
+function armButtons(on){E.play.disabled=on;E.pause.disabled=!on;E.stop.disabled=!on;E.pause.textContent='⏸ Pauză';}
+function start(){ engine==='openai'?oaStart():freeStart(); }
+function finish(){speaking=false;paused=false;E.play.disabled=false;E.pause.disabled=true;E.stop.disabled=true;
+  E.status.textContent='Gata.';E.reading.querySelectorAll('.s.cur').forEach(e=>e.classList.remove('cur'));}
 function togglePause(){
   if(!speaking)return;
-  if(!paused){synth.pause();paused=true;els.pause.textContent='▶ Continuă';els.status.textContent='Pauză.';}
-  else{synth.resume();paused=false;els.pause.textContent='⏸ Pauză';els.status.textContent='Citește…';}
+  if(!paused){paused=true;E.pause.textContent='▶ Continuă';E.status.textContent='Pauză.';
+    engine==='openai'?E.audio.pause():synth.pause();}
+  else{paused=false;E.pause.textContent='⏸ Pauză';E.status.textContent='Citește…';
+    engine==='openai'?E.audio.play():synth.resume();}
 }
-function stop(){speaking=false;synth.cancel();finish();els.status.textContent='Oprit.';}
+function stop(){speaking=false; if(engine==='openai'){E.audio.pause();E.audio.currentTime=0;} else synth.cancel(); finish();E.status.textContent='Oprit.';}
 
-// ---- fetch article from a URL ----
-els.url.value = localStorage.getItem('tr_url')||'';
+// ===================== fetch from URL =====================
 function cleanMarkdown(t){
-  // jina returns "Title: ..\nURL Source: ..\nMarkdown Content:\n<body>" — keep title + body
-  let title='';
-  const tm = t.match(/^Title:\s*(.+)$/m); if(tm) title=tm[1].trim();
-  const mc = t.indexOf('Markdown Content:');
-  let body = mc>=0 ? t.slice(mc+'Markdown Content:'.length) : t;
-  body = body
-    .replace(/!\[[^\]]*\]\([^)]*\)/g,'')          // images
-    .replace(/\[([^\]]*)\]\([^)]*\)/g,'$1')        // links -> text
-    .replace(/^#{1,6}\s*/gm,'')                     // headings
-    .replace(/[*_`>]+/g,'')                         // md emphasis/quote/code marks
-    .replace(/^\s*[-+*]\s+/gm,'• ')                 // bullets
-    .replace(/\n{3,}/g,'\n\n')                      // collapse blank lines
-    .trim();
-  return (title? title+'.\n\n':'') + body;
+  let title=''; const tm=t.match(/^Title:\s*(.+)$/m); if(tm)title=tm[1].trim();
+  const mc=t.indexOf('Markdown Content:'); let b=mc>=0?t.slice(mc+17):t;
+  b=b.replace(/!\[[^\]]*\]\([^)]*\)/g,'').replace(/\[([^\]]*)\]\([^)]*\)/g,'$1')
+     .replace(/^#{1,6}\s*/gm,'').replace(/[*_`>]+/g,'').replace(/^\s*[-+*]\s+/gm,'• ')
+     .replace(/\n{3,}/g,'\n\n').trim();
+  return (title?title+'.\n\n':'')+b;
 }
-function stripHtml(html){
-  const doc=new DOMParser().parseFromString(html,'text/html');
-  doc.querySelectorAll('script,style,nav,header,footer,aside,form,noscript').forEach(e=>e.remove());
-  const main = doc.querySelector('article')||doc.querySelector('main')||doc.body;
-  return (doc.title? doc.title+'.\n\n':'') + (main?main.innerText:'').replace(/\n{3,}/g,'\n\n').trim();
-}
+function stripHtml(html){const d=new DOMParser().parseFromString(html,'text/html');
+  d.querySelectorAll('script,style,nav,header,footer,aside,form,noscript').forEach(e=>e.remove());
+  const m=d.querySelector('article')||d.querySelector('main')||d.body;
+  return (d.title?d.title+'.\n\n':'')+(m?m.innerText:'').replace(/\n{3,}/g,'\n\n').trim();}
 async function fetchArticle(autoplay){
-  let u=els.url.value.trim();
-  if(!u){els.status.textContent='Pune un link întâi.';return;}
-  if(!/^https?:\/\//i.test(u)) u='https://'+u;
-  localStorage.setItem('tr_url',els.url.value);
-  els.fetch.disabled=els.fetchPlay.disabled=true;
-  els.status.textContent='Preiau articolul…';
-  // 1) Jina Reader — clean extracted text, CORS-friendly
-  try{
-    const r=await fetch('https://r.jina.ai/'+u,{headers:{'X-Return-Format':'text'}});
-    if(r.ok){
-      const raw=await r.text();
-      const txt=cleanMarkdown(raw);
-      if(txt && txt.length>40){ deliver(txt,autoplay); return; }
-    }
-  }catch(e){}
-  // 2) Fallback: raw HTML via CORS proxy, strip tags
-  els.status.textContent='Încerc metoda alternativă…';
-  try{
-    const r=await fetch('https://api.allorigins.win/raw?url='+encodeURIComponent(u));
-    if(r.ok){
-      const html=await r.text();
-      const txt=stripHtml(html);
-      if(txt && txt.length>40){ deliver(txt,autoplay); return; }
-    }
-  }catch(e){}
-  els.fetch.disabled=els.fetchPlay.disabled=false;
-  els.status.textContent='Nu am putut prelua pagina (poate are paywall sau blochează accesul). Încearcă alt link sau copiază textul manual.';
+  let u=E.url.value.trim(); if(!u){E.status.textContent='Pune un link.';return;}
+  if(!/^https?:\/\//i.test(u))u='https://'+u; localStorage.setItem('tr_url',E.url.value);
+  E.fetch.disabled=E.fetchPlay.disabled=true; E.status.textContent='Preiau articolul…';
+  try{const r=await fetch('https://r.jina.ai/'+u,{headers:{'X-Return-Format':'text'}});
+    if(r.ok){const txt=cleanMarkdown(await r.text()); if(txt.length>40)return deliver(txt,autoplay);}}catch(e){}
+  E.status.textContent='Încerc alternativ…';
+  try{const r=await fetch('https://api.allorigins.win/raw?url='+encodeURIComponent(u));
+    if(r.ok){const txt=stripHtml(await r.text()); if(txt.length>40)return deliver(txt,autoplay);}}catch(e){}
+  E.fetch.disabled=E.fetchPlay.disabled=false;
+  E.status.textContent='Nu am putut prelua pagina (paywall sau blocat). Copiază textul manual.';
 }
-function deliver(txt,autoplay){
-  els.text.value=txt;
-  localStorage.setItem('tr_text',txt);
-  els.fetch.disabled=els.fetchPlay.disabled=false;
-  const words=txt.split(/\s+/).length;
-  els.status.textContent=`Preluat ✓ ~${words} cuvinte. ${autoplay?'Pornesc citirea…':'Apasă ▶ Citește.'}`;
-  if(autoplay) start();
-}
+function deliver(txt,autoplay){E.text.value=txt;localStorage.setItem('tr_text',txt);
+  E.fetch.disabled=E.fetchPlay.disabled=false; showCost(txt.length);
+  E.status.textContent=`Preluat ✓ ~${txt.split(/\s+/).length} cuvinte. ${autoplay?'Pornesc…':'Apasă ▶.'}`;
+  if(autoplay)start();}
 
-// ---- events ----
-els.fetch.onclick=()=>fetchArticle(false);
-els.fetchPlay.onclick=()=>fetchArticle(true);
-els.url.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();fetchArticle(true);}});
-els.play.onclick=start;
-els.pause.onclick=togglePause;
-els.stop.onclick=stop;
-els.clear.onclick=()=>{els.text.value='';els.reading.classList.remove('on');els.reading.innerHTML='';localStorage.removeItem('tr_text');els.status.textContent='Golit.';};
-els.rate.oninput=()=>{syncRangeOut();localStorage.setItem('tr_rate',els.rate.value);};
-els.pitch.oninput=()=>{syncRangeOut();localStorage.setItem('tr_pitch',els.pitch.value);};
-els.text.oninput=()=>localStorage.setItem('tr_text',els.text.value);
-els.voice.onchange=()=>{};
-document.querySelectorAll('#langSeg button').forEach(b=>b.onclick=()=>{
-  lang=b.dataset.lang;syncLangSeg();populateVoices();localStorage.setItem('tr_lang',lang);
-});
-// keyboard: space = play/pause when not typing
-document.addEventListener('keydown',e=>{
-  if(e.code==='Space' && document.activeElement!==els.text){e.preventDefault();speaking?togglePause():start();}
-  if(e.code==='Escape')stop();
-});
-// Safari/Chrome sometimes need a tick to populate voices
-setTimeout(loadVoices,300);
+// ===================== events =====================
+document.querySelectorAll('#engineSeg button').forEach(b=>b.onclick=()=>{stop();engine=b.dataset.eng;localStorage.setItem('tr_engine',engine);syncEngine();showCost(E.text.value.length);});
+document.querySelectorAll('#langSeg button').forEach(b=>b.onclick=()=>{lang=b.dataset.lang;syncLangSeg();populateVoices();localStorage.setItem('tr_lang',lang);});
+E.play.onclick=start; E.pause.onclick=togglePause; E.stop.onclick=stop;
+E.clear.onclick=()=>{E.text.value='';E.reading.classList.remove('on');E.reading.innerHTML='';localStorage.removeItem('tr_text');E.status.textContent='Golit.';};
+E.rate.oninput=()=>{syncRate();localStorage.setItem('tr_rate',E.rate.value); if(engine==='openai'&&!E.audio.paused)E.audio.playbackRate=+E.rate.value;};
+E.text.oninput=()=>{localStorage.setItem('tr_text',E.text.value);showCost(E.text.value.length);};
+E.apiKey.oninput=()=>localStorage.setItem('tr_oa_key',E.apiKey.value);
+E.oaVoice.onchange=()=>localStorage.setItem('tr_oa_voice',E.oaVoice.value);
+E.oaModel.onchange=()=>{localStorage.setItem('tr_oa_model',E.oaModel.value);showCost(E.text.value.length);};
+E.fetch.onclick=()=>fetchArticle(false); E.fetchPlay.onclick=()=>fetchArticle(true);
+E.url.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();fetchArticle(true);}});
+document.addEventListener('keydown',e=>{if(e.code==='Space'&&![E.text,E.url,E.apiKey].includes(document.activeElement)){e.preventDefault();speaking?togglePause():start();}if(e.code==='Escape')stop();});
+showCost(E.text.value.length);
 </script>
 </body>
 </html>
