@@ -292,22 +292,26 @@ function skip(sec){if(engine==='neural'){if(!speaking)return;E.audio.currentTime
   else{sec>0?nextSeg():prevSeg();}}
 
 // ===== fetch article =====
-function cleanMarkdown(t){let title='';const tm=t.match(/^Title:\s*(.+)$/m);if(tm)title=tm[1].trim();
+function cleanMarkdown(t){
   const mc=t.indexOf('Markdown Content:');let b=mc>=0?t.slice(mc+17):t;
-  b=b.replace(/!\[[^\]]*\]\([^)]*\)/g,'').replace(/\[([^\]]*)\]\([^)]*\)/g,'$1').replace(/^#{1,6}\s*/gm,'').replace(/[*_`>]+/g,'').replace(/^\s*[-+*]\s+/gm,'• ').replace(/\n{3,}/g,'\n\n').trim();
-  return (title?title+'.\n\n':'')+b;}
+  b=b.replace(/^(Title|URL Source|Published Time|Warning|Image \d+)\s*:.*$/gmi,'')   // drop jina metadata/date lines
+   .replace(/!\[[^\]]*\]\([^)]*\)/g,'').replace(/\[([^\]]*)\]\([^)]*\)/g,'$1').replace(/^#{1,6}\s*/gm,'').replace(/[*_`>]+/g,'').replace(/^\s*[-+*]\s+/gm,'• ').replace(/\n{3,}/g,'\n\n').trim();
+  return b;}
 function stripHtml(html){const d=new DOMParser().parseFromString(html,'text/html');
   d.querySelectorAll('script,style,nav,header,footer,aside,form,noscript').forEach(e=>e.remove());
   const m=d.querySelector('article')||d.querySelector('main')||d.body;return (d.title?d.title+'.\n\n':'')+(m?m.innerText:'').replace(/\n{3,}/g,'\n\n').trim();}
 async function fetchArticle(autoplay){let u=E.url.value.trim();if(!u){E.status.textContent='Pune un link.';return;}
   if(!/^https?:\/\//i.test(u))u='https://'+u;localStorage.setItem('tr_url',E.url.value);
   E.fetch.disabled=E.fetchPlay.disabled=true;E.status.textContent='Preiau articolul…';
-  try{const r=await fetch('https://r.jina.ai/'+u,{headers:{'X-Return-Format':'text'}});if(r.ok){const txt=cleanMarkdown(await r.text());if(txt.length>40)return deliver(txt,autoplay);}}catch(e){}
+  try{const r=await fetch('https://r.jina.ai/'+u,{headers:{'X-Return-Format':'text','X-No-Cache':'true'}});if(r.ok){const txt=cleanMarkdown(await r.text());if(txt.length>40)return deliver(txt,autoplay);}}catch(e){}
   E.status.textContent='Încerc alternativ…';
   try{const r=await fetch('https://api.allorigins.win/raw?url='+encodeURIComponent(u));if(r.ok){const txt=stripHtml(await r.text());if(txt.length>40)return deliver(txt,autoplay);}}catch(e){}
   E.fetch.disabled=E.fetchPlay.disabled=false;E.status.textContent='Nu am putut prelua pagina (paywall/blocat). Copiază manual.';}
 function deliver(txt,autoplay){E.text.value=txt;localStorage.setItem('tr_text',txt);E.fetch.disabled=E.fetchPlay.disabled=false;
-  E.status.textContent=`Preluat ✓ ~${txt.split(/\s+/).length} cuvinte. ${autoplay?'Pornesc…':'Apasă ▶.'}`;if(autoplay)start();}
+  const w=txt.split(/\s+/).filter(Boolean).length, min=Math.max(1,Math.round(w/150)), short=w<120;
+  E.text.scrollIntoView({behavior:'smooth',block:'center'});
+  E.status.textContent=(short?'⚠ Pare scurt (poate paywall/JS). ':'')+`Preluat ✓ ${w} cuvinte (~${min} min). Șterge ce nu vrei din casetă, apoi ▶.`;
+  if(autoplay&&!short)start();}
 
 // ===== events =====
 document.querySelectorAll('#engineSeg button').forEach(b=>b.onclick=()=>{stopAll();engine=b.dataset.eng;localStorage.setItem('tr_engine',engine);syncEngine();});
