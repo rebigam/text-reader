@@ -16,7 +16,7 @@
   header{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px}
   header h1{font-size:18px;margin:0;font-weight:600}
   header .sub{color:var(--muted);font-size:12px}
-  main{flex:1;display:flex;flex-direction:column;gap:14px;padding:16px 20px;max-width:1000px;width:100%;margin:0 auto}
+  main{flex:1;display:flex;flex-direction:column;gap:14px;padding:16px 20px 120px;max-width:1000px;width:100%;margin:0 auto}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}
   .controls{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end}
   .field{display:flex;flex-direction:column;gap:6px}
@@ -30,19 +30,17 @@
   .seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
   .seg button{background:var(--panel2);color:var(--muted);border:0;padding:10px 14px;font-size:13px;cursor:pointer}
   .seg button.active{background:var(--accent);color:#fff}
-  textarea{width:100%;min-height:170px;resize:vertical;background:var(--panel);color:var(--txt);
+  textarea{width:100%;min-height:150px;resize:vertical;background:var(--panel);color:var(--txt);
            border:1px solid var(--line);border-radius:14px;padding:14px;font-size:16px;line-height:1.6;font-family:inherit}
   .reading{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;
            font-size:18px;line-height:1.75;display:none}
   .reading.on{display:block}
   .reading .s.cur{background:var(--hlbg);color:var(--hltxt);border-radius:4px;padding:1px 3px}
-  .buttons{display:flex;gap:10px;flex-wrap:wrap}
   .btn{border:0;border-radius:10px;padding:13px 20px;font-size:15px;font-weight:600;cursor:pointer;color:#fff}
   .btn:disabled{opacity:.4;cursor:not-allowed}
-  .btn.play{background:var(--accent2)} .btn.pause{background:#d9a441} .btn.stop{background:#e05a5a}
+  .btn.play{background:var(--accent2)} .btn.stop{background:#e05a5a}
   .btn.ghost{background:var(--panel2);color:var(--txt);border:1px solid var(--line)}
   .hint{color:var(--muted);font-size:13px}
-  .row{display:flex;gap:14px;flex-wrap:wrap;align-items:center;justify-content:space-between}
   .urlbar{display:flex;gap:10px;flex-wrap:wrap}
   .urlbar input{flex:1;min-width:220px;font-size:15px}
   .box{display:none;flex-wrap:wrap;gap:14px;align-items:flex-end;margin-top:14px}
@@ -53,6 +51,20 @@
   .pill{font-size:12px;color:var(--muted);background:var(--panel2);border:1px solid var(--line);border-radius:20px;padding:4px 10px}
   details summary{cursor:pointer;color:var(--muted);font-size:12px}
   a{color:var(--accent)}
+  /* ---- fixed transport bar (bottom) ---- */
+  .transport{position:fixed;left:0;right:0;bottom:0;background:#0c0e13;border-top:1px solid var(--line);
+             padding:10px 16px calc(10px + env(safe-area-inset-bottom));z-index:50}
+  .tinner{max-width:1000px;margin:0 auto;display:flex;flex-direction:column;gap:8px}
+  .seekwrap{display:flex;align-items:center;gap:10px}
+  .seekwrap .t{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;min-width:38px;text-align:center}
+  #seek{flex:1;height:26px}
+  #seek:disabled{opacity:.45}
+  .tbtns{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap}
+  .rbtn{background:var(--panel2);color:var(--txt);border:1px solid var(--line);border-radius:10px;
+        min-width:46px;height:46px;font-size:17px;cursor:pointer}
+  .rbtn:disabled{opacity:.4}
+  .tbtns .btn{padding:0 18px;height:46px}
+  .statusline{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -83,7 +95,6 @@
       </div>
     </div>
 
-    <!-- Neural settings -->
     <div class="box on" id="neuralBox">
       <div class="field">
         <label>Voce neurală</label>
@@ -109,11 +120,10 @@
           <input id="backend" type="url" style="flex:1;min-width:260px" placeholder="https://...trycloudflare.com">
           <button class="btn ghost" id="testBackend" style="padding:9px 14px;font-size:13px">Testează</button>
         </div>
-        <div class="hint" style="margin-top:6px">Se completează automat din server. Schimb-o doar dacă Alfred îți dă alt link.</div>
+        <div class="hint" style="margin-top:6px">Se completează automat. Schimb-o doar dacă Alfred îți dă alt link.</div>
       </details>
     </div>
 
-    <!-- Free phone settings -->
     <div class="box" id="freeBox">
       <div class="field">
         <label>Limbă</label>
@@ -136,65 +146,75 @@
 
   <textarea id="text" placeholder="Lipește text aici sau preia dintr-un link mai sus."></textarea>
   <div class="reading" id="reading"></div>
+  <div class="hint">100% gratuit. Vocea neurală rulează pe Mac mini-ul tău; dacă e oprit, comută pe „Telefon (offline)".</div>
+</main>
 
-  <div class="row">
-    <div class="buttons">
-      <button class="btn play"  id="play">▶ Citește</button>
-      <button class="btn pause" id="pause" disabled>⏸ Pauză</button>
-      <button class="btn stop"  id="stop"  disabled>⏹ Stop</button>
+<!-- TRANSPORT BAR -->
+<div class="transport">
+  <div class="tinner">
+    <div class="seekwrap">
+      <span class="t" id="tCur">0:00</span>
+      <input id="seek" type="range" min="0" max="100" step="0.1" value="0" disabled>
+      <span class="t" id="tDur">0:00</span>
+    </div>
+    <div class="tbtns">
+      <button class="rbtn" id="restart" title="De la capăt">⤒</button>
+      <button class="rbtn" id="prev" title="Înapoi o bucată">⏮</button>
+      <button class="rbtn" id="back" title="−10s">⏪</button>
+      <button class="btn play" id="play">▶ Citește</button>
+      <button class="rbtn" id="fwd" title="+10s">⏩</button>
+      <button class="rbtn" id="next" title="Înainte o bucată">⏭</button>
+      <button class="btn stop" id="stop" disabled>⏹</button>
       <button class="btn ghost" id="clear">Golește</button>
     </div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <div class="statusline">
       <span class="pill" id="cost">gratuit</span>
       <span class="hint" id="status">Pregătit.</span>
     </div>
   </div>
-  <div class="hint">100% gratuit. Vocea neurală rulează pe Mac mini-ul tău; dacă e oprit, comută pe „Telefon (offline)".</div>
-</main>
+</div>
 
 <audio id="audio" style="display:none"></audio>
 
 <script>
 const synth=window.speechSynthesis, $=id=>document.getElementById(id), E={};
-['text','reading','voice','rate','rateOut','play','pause','stop','clear','status','warn','url',
- 'fetch','fetchPlay','nVoice','backend','testBackend','neuralBox','freeBox','bdot','bstat','cost','audio']
- .forEach(k=>E[k]=$(k));
+['text','reading','voice','rate','rateOut','play','stop','clear','status','warn','url','fetch','fetchPlay',
+ 'nVoice','backend','testBackend','neuralBox','freeBox','bdot','bstat','cost','audio',
+ 'seek','tCur','tDur','restart','prev','next','back','fwd'].forEach(k=>E[k]=$(k));
 
-const DEFAULT_BACKEND="https://sing-movements-arabia-fda.trycloudflare.com";
+const DEFAULT_BACKEND="https://category-prove-nine-measured.trycloudflare.com";
 let engine=localStorage.getItem('tr_engine')||'neural';
 let lang=localStorage.getItem('tr_lang')||'auto';
 let backendURL=localStorage.getItem('tr_backend')||DEFAULT_BACKEND;
-let voices=[], speaking=false, paused=false;
+let voices=[], speaking=false, paused=false, seeking=false;
 
-// persistence
 E.text.value=localStorage.getItem('tr_text')||'';
 E.url.value=localStorage.getItem('tr_url')||'';
 E.rate.value=localStorage.getItem('tr_rate')||'1';
 E.nVoice.value=localStorage.getItem('tr_nvoice')||'auto';
 E.backend.value=backendURL;
-syncRate(); syncEngine(); syncLangSeg();
+syncRate(); syncEngine(); syncLangSeg(); updateMainBtn();
 
 function syncRate(){E.rateOut.textContent=(+E.rate.value).toFixed(2)+'×';}
 function syncEngine(){
   document.querySelectorAll('#engineSeg button').forEach(b=>b.classList.toggle('active',b.dataset.eng===engine));
   E.neuralBox.classList.toggle('on',engine==='neural');
   E.freeBox.classList.toggle('on',engine==='free');
-  if(engine==='neural')pingBackend(); else {E.bdot.className='dot';E.bstat.textContent='voce telefon';checkWarn();}
+  E.seek.disabled=(engine!=='neural');           // seek bar only meaningful for audio engine
+  if(engine==='neural')pingBackend(); else{E.bdot.className='dot';E.bstat.textContent='voce telefon';checkWarn();}
 }
 function syncLangSeg(){document.querySelectorAll('#langSeg button').forEach(b=>b.classList.toggle('active',b.dataset.lang===lang));}
+function updateMainBtn(){E.play.textContent=(speaking&&!paused)?'⏸ Pauză':'▶ Citește';}
 
-// discover backend URL from repo (so Alfred can update it without touching the app)
 fetch('backend.txt',{cache:'no-store'}).then(r=>r.ok?r.text():null).then(t=>{
-  if(t){t=t.trim(); if(/^https:\/\//.test(t) && !localStorage.getItem('tr_backend')){backendURL=t;E.backend.value=t; if(engine==='neural')pingBackend();}}
+  if(t){t=t.trim();if(/^https:\/\//.test(t)&&!localStorage.getItem('tr_backend')){backendURL=t;E.backend.value=t;if(engine==='neural')pingBackend();}}
 }).catch(()=>{});
 
-async function pingBackend(){
-  E.bdot.className='dot'; E.bstat.textContent='verific motorul…';
-  try{const r=await fetch(backendURL+'/',{method:'GET'}); if(r.ok){E.bdot.className='dot ok';E.bstat.textContent='motor neural pornit ✓';return true;}}catch(e){}
-  E.bdot.className='dot bad'; E.bstat.textContent='motor neural oprit — folosește „Telefon"'; return false;
-}
+async function pingBackend(){E.bdot.className='dot';E.bstat.textContent='verific motorul…';
+  try{const r=await fetch(backendURL+'/',{method:'GET'});if(r.ok){E.bdot.className='dot ok';E.bstat.textContent='motor neural pornit ✓';return true;}}catch(e){}
+  E.bdot.className='dot bad';E.bstat.textContent='motor oprit — folosește „Telefon"';return false;}
 
-// ---- free voices ----
+// ---- phone voices ----
 function loadVoices(){voices=synth.getVoices();populateVoices();checkWarn();}
 synth.onvoiceschanged=loadVoices; loadVoices(); setTimeout(loadVoices,400);
 function voicesFor(l){const p=l==='ro'?'ro':'en';return voices.filter(v=>v.lang.toLowerCase().startsWith(p));}
@@ -203,7 +223,7 @@ function populateVoices(){const list=lang==='auto'?voices:voicesFor(lang);const 
   if([...E.voice.options].some(o=>o.value===prev))E.voice.value=prev;}
 function checkWarn(){if(engine!=='free'){E.warn.classList.remove('on');return;}
   const hasRo=voices.some(v=>v.lang.toLowerCase().startsWith('ro'));
-  if(!hasRo){E.warn.classList.add('on');E.warn.textContent='⚠ Nicio voce românească în telefon. Engleza merge; pentru română instaleaz-o din Settings → Text-to-speech.';}else E.warn.classList.remove('on');}
+  if(!hasRo){E.warn.classList.add('on');E.warn.textContent='⚠ Nicio voce românească în telefon. Engleza merge; instaleaz-o din Settings → Text-to-speech.';}else E.warn.classList.remove('on');}
 
 // ---- text utils ----
 const RO_HINT=/[ăâîșțşţ]|\b(și|să|nu|este|sunt|pentru|această|dacă|când|foarte|trebuie)\b/i;
@@ -213,23 +233,24 @@ function escapeHtml(s){return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>'
 let units=[];
 function renderReading(arr){E.reading.classList.add('on');
   E.reading.innerHTML=arr.map((s,i)=>`<span class="s" data-i="${i}">${escapeHtml(s)} </span>`).join('');
-  units=arr.map((s,i)=>({text:s,el:E.reading.querySelector(`.s[data-i="${i}"]`)}));}
+  units=arr.map((s,i)=>({el:E.reading.querySelector(`.s[data-i="${i}"]`)}));}
 function highlight(i){E.reading.querySelectorAll('.s.cur').forEach(e=>e.classList.remove('cur'));
   const c=units[i]&&units[i].el;if(c){c.classList.add('cur');c.scrollIntoView({block:'center',behavior:'smooth'});}}
+function fmtT(s){s=Math.max(0,Math.floor(s||0));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');}
 
-// ===== FREE phone playback =====
-let fIdx=0;
-function freeStart(){const arr=splitSentences(E.text.value.trim());if(!arr.length){E.status.textContent='Nu e text.';return;}
-  synth.cancel();renderReading(arr);fIdx=0;speaking=true;paused=false;armButtons(true);freeNext();}
-function freeNext(){if(fIdx>=units.length)return finish();
-  const s=units[fIdx].text,u=new SpeechSynthesisUtterance(s);const fl=lang==='auto'?detect(s):lang;
+// ===== PHONE engine =====
+let sentences=[],fIdx=0;
+function freeStart(){sentences=splitSentences(E.text.value.trim());if(!sentences.length){E.status.textContent='Nu e text.';return;}
+  synth.cancel();renderReading(sentences);fIdx=0;speaking=true;paused=false;armOn();freeNext();}
+function freeNext(){if(fIdx>=sentences.length)return finish();
+  const s=sentences[fIdx],u=new SpeechSynthesisUtterance(s);const fl=lang==='auto'?detect(s):lang;
   const v=(lang!=='auto'&&voices.find(x=>x.name===E.voice.value))||voicesFor(fl).find(x=>/Ioana|Samantha|Daniel|Alex|Karen/i.test(x.name))||voicesFor(fl)[0]||voices.find(x=>x.name===E.voice.value)||voices[0];
   if(v){u.voice=v;u.lang=v.lang;}u.rate=+E.rate.value;
-  u.onstart=()=>{highlight(fIdx);E.status.textContent=`Citește ${fIdx+1}/${units.length} (${fl.toUpperCase()})`;};
-  u.onend=()=>{fIdx++;if(speaking)freeNext();};u.onerror=e=>{if(e.error!=='interrupted'){fIdx++;if(speaking)freeNext();}};
+  u.onstart=()=>{highlight(fIdx);E.status.textContent=`Citește ${fIdx+1}/${sentences.length}`;E.seek.max=sentences.length;E.seek.value=fIdx+1;E.tCur.textContent=(fIdx+1);E.tDur.textContent=sentences.length;};
+  u.onend=()=>{if(speaking&&!paused){fIdx++;freeNext();}};u.onerror=e=>{if(e.error!=='interrupted'&&speaking){fIdx++;freeNext();}};
   synth.speak(u);}
 
-// ===== NEURAL (free, via Mac mini) playback =====
+// ===== NEURAL engine =====
 let chunks=[],ni=0,cache={};
 function buildChunks(t){const s=splitSentences(t),out=[];let c='';for(const x of s){if((c+' '+x).length>3500&&c){out.push(c.trim());c=x;}else c+=' '+x;}if(c.trim())out.push(c.trim());return out;}
 function edgeRate(){const p=Math.round((+E.rate.value-1)*100);return (p>=0?'+':'')+p+'%';}
@@ -237,25 +258,38 @@ function pickNeural(text){const sel=E.nVoice.value;if(sel!=='auto')return sel;re
 async function ttsN(i){if(cache[i])return cache[i];
   const r=await fetch(backendURL+'/',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({text:chunks[i],voice:pickNeural(chunks[i]),rate:edgeRate()})});
-  if(!r.ok)throw new Error('backend '+r.status);
-  const url=URL.createObjectURL(await r.blob());cache[i]=url;return url;}
+  if(!r.ok)throw new Error('backend '+r.status);const url=URL.createObjectURL(await r.blob());cache[i]=url;return url;}
 async function neuralStart(){const t=E.text.value.trim();if(!t){E.status.textContent='Nu e text.';return;}
-  if(!await pingBackend()){E.status.textContent='Motorul neural e oprit. Comut pe „Telefon (offline)".';engine='free';localStorage.setItem('tr_engine','free');syncEngine();return;}
-  chunks=buildChunks(t);renderReading(chunks);ni=0;cache={};speaking=true;paused=false;armButtons(true);neuralPlay(0);}
-async function neuralPlay(i){if(i>=chunks.length)return finish();ni=i;highlight(i);E.status.textContent=`Pregătesc ${i+1}/${chunks.length}…`;
-  let url;try{url=await ttsN(i);}catch(e){speaking=false;armButtons(false);E.status.textContent='Eroare motor: '+e.message+' — încearcă „Telefon".';return;}
+  if(!await pingBackend()){E.status.textContent='Motor neural oprit. Comut pe „Telefon".';engine='free';localStorage.setItem('tr_engine','free');syncEngine();return;}
+  chunks=buildChunks(t);renderReading(chunks);ni=0;cache={};speaking=true;paused=false;armOn();neuralPlay(0);}
+async function neuralPlay(i){if(i<0)i=0;if(i>=chunks.length)return finish();ni=i;paused=false;highlight(i);
+  E.status.textContent=`Pregătesc ${i+1}/${chunks.length}…`;
+  let url;try{url=await ttsN(i);}catch(e){speaking=false;armOff();E.status.textContent='Eroare motor: '+e.message;return;}
   if(!speaking)return;E.audio.src=url;E.audio.playbackRate=1;E.status.textContent=`Citește ${i+1}/${chunks.length}`;
-  try{await E.audio.play();}catch(e){}if(i+1<chunks.length)ttsN(i+1).catch(()=>{});}
-E.audio.onended=()=>{if(speaking&&engine==='neural')neuralPlay(ni+1);};
+  try{await E.audio.play();}catch(e){}updateMainBtn();if(i+1<chunks.length)ttsN(i+1).catch(()=>{});}
+E.audio.onended=()=>{if(speaking&&engine==='neural'&&!paused)neuralPlay(ni+1);};
+E.audio.addEventListener('loadedmetadata',()=>{if(engine==='neural'&&isFinite(E.audio.duration)){E.seek.max=E.audio.duration;E.tDur.textContent=fmtT(E.audio.duration);}});
+E.audio.addEventListener('timeupdate',()=>{if(engine==='neural'&&!seeking){E.seek.value=E.audio.currentTime;E.tCur.textContent=fmtT(E.audio.currentTime);}});
 
-// ===== unified controls =====
-function armButtons(on){E.play.disabled=on;E.pause.disabled=!on;E.stop.disabled=!on;E.pause.textContent='⏸ Pauză';}
+// ===== transport controls (work for both engines) =====
+function armOn(){E.stop.disabled=false;updateMainBtn();}
+function armOff(){E.stop.disabled=true;updateMainBtn();}
 function start(){engine==='neural'?neuralStart():freeStart();}
-function finish(){speaking=false;paused=false;E.play.disabled=false;E.pause.disabled=true;E.stop.disabled=true;E.status.textContent='Gata.';E.reading.querySelectorAll('.s.cur').forEach(e=>e.classList.remove('cur'));}
+function finish(){speaking=false;paused=false;E.stop.disabled=true;E.status.textContent='Gata.';E.reading.querySelectorAll('.s.cur').forEach(e=>e.classList.remove('cur'));updateMainBtn();}
 function togglePause(){if(!speaking)return;
-  if(!paused){paused=true;E.pause.textContent='▶ Continuă';E.status.textContent='Pauză.';engine==='neural'?E.audio.pause():synth.pause();}
-  else{paused=false;E.pause.textContent='⏸ Pauză';E.status.textContent='Citește…';engine==='neural'?E.audio.play():synth.resume();}}
-function stop(){speaking=false;if(engine==='neural'){E.audio.pause();E.audio.currentTime=0;}else synth.cancel();finish();E.status.textContent='Oprit.';}
+  if(!paused){paused=true;E.status.textContent='Pauză.';engine==='neural'?E.audio.pause():synth.pause();}
+  else{paused=false;E.status.textContent='Citește…';if(engine==='neural')E.audio.play();else{synth.resume();/*safari fallback*/if(synth.paused)freeNext();}}
+  updateMainBtn();}
+function stopAll(){speaking=false;paused=false;if(engine==='neural'){E.audio.pause();E.audio.currentTime=0;}else synth.cancel();
+  E.stop.disabled=true;E.status.textContent='Oprit.';E.seek.value=0;E.tCur.textContent=engine==='neural'?'0:00':'0';updateMainBtn();}
+function restartAll(){if(!speaking){start();return;}
+  if(engine==='neural'){E.audio.pause();neuralPlay(0);}else{synth.cancel();fIdx=0;freeNext();}}
+function prevSeg(){if(engine==='neural'){if(!speaking){neuralStart();return;}E.audio.pause();neuralPlay(Math.max(0,ni-1));}
+  else{if(!speaking){freeStart();return;}synth.cancel();fIdx=Math.max(0,fIdx-1);freeNext();}}
+function nextSeg(){if(engine==='neural'){if(!speaking)return;E.audio.pause();if(ni+1<chunks.length)neuralPlay(ni+1);else finish();}
+  else{if(!speaking)return;synth.cancel();fIdx++;freeNext();}}
+function skip(sec){if(engine==='neural'){if(!speaking)return;E.audio.currentTime=Math.min(E.audio.duration||0,Math.max(0,E.audio.currentTime+sec));}
+  else{sec>0?nextSeg():prevSeg();}}
 
 // ===== fetch article =====
 function cleanMarkdown(t){let title='';const tm=t.match(/^Title:\s*(.+)$/m);if(tm)title=tm[1].trim();
@@ -271,23 +305,30 @@ async function fetchArticle(autoplay){let u=E.url.value.trim();if(!u){E.status.t
   try{const r=await fetch('https://r.jina.ai/'+u,{headers:{'X-Return-Format':'text'}});if(r.ok){const txt=cleanMarkdown(await r.text());if(txt.length>40)return deliver(txt,autoplay);}}catch(e){}
   E.status.textContent='Încerc alternativ…';
   try{const r=await fetch('https://api.allorigins.win/raw?url='+encodeURIComponent(u));if(r.ok){const txt=stripHtml(await r.text());if(txt.length>40)return deliver(txt,autoplay);}}catch(e){}
-  E.fetch.disabled=E.fetchPlay.disabled=false;E.status.textContent='Nu am putut prelua pagina (paywall/blocat). Copiază textul manual.';}
+  E.fetch.disabled=E.fetchPlay.disabled=false;E.status.textContent='Nu am putut prelua pagina (paywall/blocat). Copiază manual.';}
 function deliver(txt,autoplay){E.text.value=txt;localStorage.setItem('tr_text',txt);E.fetch.disabled=E.fetchPlay.disabled=false;
   E.status.textContent=`Preluat ✓ ~${txt.split(/\s+/).length} cuvinte. ${autoplay?'Pornesc…':'Apasă ▶.'}`;if(autoplay)start();}
 
 // ===== events =====
-document.querySelectorAll('#engineSeg button').forEach(b=>b.onclick=()=>{stop();engine=b.dataset.eng;localStorage.setItem('tr_engine',engine);syncEngine();});
+document.querySelectorAll('#engineSeg button').forEach(b=>b.onclick=()=>{stopAll();engine=b.dataset.eng;localStorage.setItem('tr_engine',engine);syncEngine();});
 document.querySelectorAll('#langSeg button').forEach(b=>b.onclick=()=>{lang=b.dataset.lang;syncLangSeg();populateVoices();localStorage.setItem('tr_lang',lang);});
-E.play.onclick=start;E.pause.onclick=togglePause;E.stop.onclick=stop;
-E.clear.onclick=()=>{E.text.value='';E.reading.classList.remove('on');E.reading.innerHTML='';localStorage.removeItem('tr_text');E.status.textContent='Golit.';};
-E.rate.oninput=()=>{syncRate();localStorage.setItem('tr_rate',E.rate.value);};
+E.play.onclick=()=>{speaking?togglePause():start();};
+E.stop.onclick=stopAll; E.restart.onclick=restartAll; E.prev.onclick=prevSeg; E.next.onclick=nextSeg;
+E.back.onclick=()=>skip(-10); E.fwd.onclick=()=>skip(10);
+E.clear.onclick=()=>{stopAll();E.text.value='';E.reading.classList.remove('on');E.reading.innerHTML='';localStorage.removeItem('tr_text');E.status.textContent='Golit.';};
+E.rate.oninput=()=>{syncRate();localStorage.setItem('tr_rate',E.rate.value);if(engine==='neural')E.audio.playbackRate=1;};
 E.text.oninput=()=>localStorage.setItem('tr_text',E.text.value);
 E.nVoice.onchange=()=>localStorage.setItem('tr_nvoice',E.nVoice.value);
 E.backend.onchange=()=>{backendURL=E.backend.value.trim().replace(/\/$/,'');localStorage.setItem('tr_backend',backendURL);pingBackend();};
 E.testBackend.onclick=()=>{backendURL=E.backend.value.trim().replace(/\/$/,'');pingBackend();};
 E.fetch.onclick=()=>fetchArticle(false);E.fetchPlay.onclick=()=>fetchArticle(true);
 E.url.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();fetchArticle(true);}});
-document.addEventListener('keydown',e=>{if(e.code==='Space'&&![E.text,E.url,E.backend].includes(document.activeElement)){e.preventDefault();speaking?togglePause():start();}if(e.code==='Escape')stop();});
+E.seek.addEventListener('input',()=>{if(engine!=='neural'){return;}seeking=true;E.tCur.textContent=fmtT(E.seek.value);});
+E.seek.addEventListener('change',()=>{if(engine==='neural'&&speaking){E.audio.currentTime=+E.seek.value;}seeking=false;});
+document.addEventListener('keydown',e=>{if([E.text,E.url,E.backend].includes(document.activeElement))return;
+  if(e.code==='Space'){e.preventDefault();speaking?togglePause():start();}
+  if(e.code==='Escape')stopAll();
+  if(e.code==='ArrowRight')skip(10); if(e.code==='ArrowLeft')skip(-10);});
 </script>
 </body>
 </html>
