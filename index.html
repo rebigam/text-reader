@@ -30,7 +30,7 @@
   .seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
   .seg button{background:var(--panel2);color:var(--muted);border:0;padding:10px 14px;font-size:13px;cursor:pointer}
   .seg button.active{background:var(--accent);color:#fff}
-  textarea{width:100%;min-height:150px;resize:vertical;background:var(--panel);color:var(--txt);
+  textarea{width:100%;min-height:58vh;resize:vertical;background:var(--panel);color:var(--txt);
            border:1px solid var(--line);border-radius:14px;padding:14px;font-size:16px;line-height:1.6;font-family:inherit}
   .reading{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;
            font-size:18px;line-height:1.75;display:none}
@@ -50,6 +50,8 @@
   .warn{color:#e0a14a;font-size:13px;display:none} .warn.on{display:block}
   .pill{font-size:12px;color:var(--muted);background:var(--panel2);border:1px solid var(--line);border-radius:20px;padding:4px 10px}
   details summary{cursor:pointer;color:var(--muted);font-size:12px}
+  .setcard summary{color:var(--accent);font-size:13px;font-weight:600;padding:2px 0}
+  .setcard[open]{padding-bottom:14px}
   a{color:var(--accent)}
   /* ---- fixed transport bar (bottom) ---- */
   .transport{position:fixed;left:0;right:0;bottom:0;background:#0c0e13;border-top:1px solid var(--line);
@@ -72,7 +74,7 @@
   <span style="font-size:22px">🎧</span>
   <div>
     <h1>Text Reader</h1>
-    <div class="sub">Voce naturală gratuită · English &amp; Română · citește din link sau text</div>
+    <div class="sub">Voce naturală gratuită · English &amp; Română · citește din link, document sau text</div>
   </div>
 </header>
 
@@ -114,7 +116,7 @@
           </optgroup>
         </select>
       </div>
-      <details style="width:100%">
+      <details class="setcard" style="width:100%">
         <summary>Avansat — adresa motorului (backend)</summary>
         <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
           <input id="backend" type="url" style="flex:1;min-width:260px" placeholder="https://...trycloudflare.com">
@@ -142,9 +144,11 @@
     <input id="url" type="url" placeholder="Lipește link de articol/Substack (https://…)">
     <button class="btn ghost" id="fetch">⬇ Preia</button>
     <button class="btn play" id="fetchPlay">⬇▶ Preia &amp; Citește</button>
+    <label class="btn ghost" for="file" style="cursor:pointer" title="PDF, DOCX, TXT, MD">📄 Document</label>
+    <input id="file" type="file" accept=".pdf,.docx,.txt,.md,text/plain,text/markdown" style="display:none">
   </div>
 
-  <textarea id="text" placeholder="Lipește text aici sau preia dintr-un link mai sus."></textarea>
+  <textarea id="text" placeholder="Lipește text aici, încarcă un document (📄) sau preia dintr-un link. Apoi șterge ce nu vrei citit și apasă ▶. Trage de colțul de jos ca s-o mărești."></textarea>
   <div class="reading" id="reading"></div>
   <div class="hint">100% gratuit. Vocea neurală rulează pe Mac mini-ul tău; dacă e oprit, comută pe „Telefon (offline)".</div>
 </main>
@@ -180,7 +184,7 @@
 const synth=window.speechSynthesis, $=id=>document.getElementById(id), E={};
 ['text','reading','voice','rate','rateOut','play','stop','clear','status','warn','url','fetch','fetchPlay',
  'nVoice','backend','testBackend','neuralBox','freeBox','bdot','bstat','cost','audio',
- 'seek','tCur','tDur','restart','prev','next','back','fwd'].forEach(k=>E[k]=$(k));
+ 'seek','tCur','tDur','restart','prev','next','back','fwd','file'].forEach(k=>E[k]=$(k));
 
 const DEFAULT_BACKEND="https://category-prove-nine-measured.trycloudflare.com";
 let engine=localStorage.getItem('tr_engine')||'neural';
@@ -237,6 +241,10 @@ function renderReading(arr){E.reading.classList.add('on');
 function highlight(i){E.reading.querySelectorAll('.s.cur').forEach(e=>e.classList.remove('cur'));
   const c=units[i]&&units[i].el;if(c){c.classList.add('cur');c.scrollIntoView({block:'center',behavior:'smooth'});}}
 function fmtT(s){s=Math.max(0,Math.floor(s||0));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');}
+function rt(){return engine==='neural'?(+E.rate.value||1):1;}
+function applyRate(){try{E.audio.preservesPitch=true;E.audio.mozPreservesPitch=true;E.audio.webkitPreservesPitch=true;}catch(e){}if(engine==='neural')E.audio.playbackRate=+E.rate.value||1;}
+function updateTimes(){if(engine==='neural'&&isFinite(E.audio.duration)){E.tDur.textContent=fmtT(E.audio.duration/rt());E.tCur.textContent=fmtT(E.audio.currentTime/rt());}}
+function freeCache(){for(const k in cache){try{URL.revokeObjectURL(cache[k]);}catch(e){}}cache={};}
 
 // ===== PHONE engine =====
 let sentences=[],fIdx=0;
@@ -253,23 +261,23 @@ function freeNext(){if(fIdx>=sentences.length)return finish();
 // ===== NEURAL engine =====
 let chunks=[],ni=0,cache={};
 function buildChunks(t){const s=splitSentences(t),out=[];let c='';for(const x of s){if((c+' '+x).length>3500&&c){out.push(c.trim());c=x;}else c+=' '+x;}if(c.trim())out.push(c.trim());return out;}
-function edgeRate(){const p=Math.round((+E.rate.value-1)*100);return (p>=0?'+':'')+p+'%';}
 function pickNeural(text){const sel=E.nVoice.value;if(sel!=='auto')return sel;return detect(text)==='ro'?'ro-RO-AlinaNeural':'en-US-AriaNeural';}
 async function ttsN(i){if(cache[i])return cache[i];
+  // synthesize at NEUTRAL rate; speed is applied live via audio.playbackRate so it can change mid-playback
   const r=await fetch(backendURL+'/',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({text:chunks[i],voice:pickNeural(chunks[i]),rate:edgeRate()})});
+    body:JSON.stringify({text:chunks[i],voice:pickNeural(chunks[i])})});
   if(!r.ok)throw new Error('backend '+r.status);const url=URL.createObjectURL(await r.blob());cache[i]=url;return url;}
 async function neuralStart(){const t=E.text.value.trim();if(!t){E.status.textContent='Nu e text.';return;}
   if(!await pingBackend()){E.status.textContent='Motor neural oprit. Comut pe „Telefon".';engine='free';localStorage.setItem('tr_engine','free');syncEngine();return;}
-  chunks=buildChunks(t);renderReading(chunks);ni=0;cache={};speaking=true;paused=false;armOn();neuralPlay(0);}
+  chunks=buildChunks(t);renderReading(chunks);ni=0;freeCache();speaking=true;paused=false;armOn();neuralPlay(0);}
 async function neuralPlay(i){if(i<0)i=0;if(i>=chunks.length)return finish();ni=i;paused=false;highlight(i);
   E.status.textContent=`Pregătesc ${i+1}/${chunks.length}…`;
   let url;try{url=await ttsN(i);}catch(e){speaking=false;armOff();E.status.textContent='Eroare motor: '+e.message;return;}
-  if(!speaking)return;E.audio.src=url;E.audio.playbackRate=1;E.status.textContent=`Citește ${i+1}/${chunks.length}`;
+  if(!speaking)return;E.audio.src=url;applyRate();E.status.textContent=`Citește ${i+1}/${chunks.length}`;
   try{await E.audio.play();}catch(e){}updateMainBtn();if(i+1<chunks.length)ttsN(i+1).catch(()=>{});}
 E.audio.onended=()=>{if(speaking&&engine==='neural'&&!paused)neuralPlay(ni+1);};
-E.audio.addEventListener('loadedmetadata',()=>{if(engine==='neural'&&isFinite(E.audio.duration)){E.seek.max=E.audio.duration;E.tDur.textContent=fmtT(E.audio.duration);}});
-E.audio.addEventListener('timeupdate',()=>{if(engine==='neural'&&!seeking){E.seek.value=E.audio.currentTime;E.tCur.textContent=fmtT(E.audio.currentTime);}});
+E.audio.addEventListener('loadedmetadata',()=>{if(engine==='neural'&&isFinite(E.audio.duration)){applyRate();E.seek.max=E.audio.duration;E.tDur.textContent=fmtT(E.audio.duration/rt());}});
+E.audio.addEventListener('timeupdate',()=>{if(engine==='neural'&&!seeking){E.seek.value=E.audio.currentTime;E.tCur.textContent=fmtT(E.audio.currentTime/rt());E.tDur.textContent=fmtT(E.audio.duration/rt());}});
 
 // ===== transport controls (work for both engines) =====
 function armOn(){E.stop.disabled=false;updateMainBtn();}
@@ -313,6 +321,26 @@ function deliver(txt,autoplay){E.text.value=txt;localStorage.setItem('tr_text',t
   E.status.textContent=(short?'⚠ Pare scurt (poate paywall/JS). ':'')+`Preluat ✓ ${w} cuvinte (~${min} min). Șterge ce nu vrei din casetă, apoi ▶.`;
   if(autoplay&&!short)start();}
 
+// ===== documents (PDF / DOCX / TXT / MD) — 100% client-side, no server =====
+function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error('nu pot încărca biblioteca'));document.head.appendChild(s);});}
+async function ensurePdf(){if(window.pdfjsLib)return;await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';}
+async function ensureMammoth(){if(window.mammoth)return;await loadScript('https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js');}
+async function pdfText(ab){const pdf=await pdfjsLib.getDocument({data:ab}).promise;let out='';
+  for(let p=1;p<=pdf.numPages;p++){const pg=await pdf.getPage(p);const c=await pg.getTextContent();
+    out+=c.items.map(i=>i.str).join(' ').replace(/[ \t]+/g,' ')+'\n\n';E.status.textContent=`Extrag PDF ${p}/${pdf.numPages}…`;}
+  return out;}
+async function readDoc(f){const ext=(f.name.split('.').pop()||'').toLowerCase();
+  if(ext==='pdf'){await ensurePdf();return pdfText(await f.arrayBuffer());}
+  if(ext==='docx'){await ensureMammoth();return (await mammoth.extractRawText({arrayBuffer:await f.arrayBuffer()})).value;}
+  return await f.text(); // txt, md, and any plain-text fallback
+}
+async function handleFile(){const f=E.file.files[0];if(!f)return;E.status.textContent='Citesc documentul…';
+  try{let txt=(await readDoc(f)).replace(/\r/g,'').replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n').trim();
+    if(txt.length<2){E.status.textContent='Documentul pare gol sau scanat (PDF din imagini, fără text selectabil).';return;}
+    deliver(txt,false);
+  }catch(e){E.status.textContent='Eroare document: '+(e.message||e);}
+  E.file.value='';}
+
 // ===== events =====
 document.querySelectorAll('#engineSeg button').forEach(b=>b.onclick=()=>{stopAll();engine=b.dataset.eng;localStorage.setItem('tr_engine',engine);syncEngine();});
 document.querySelectorAll('#langSeg button').forEach(b=>b.onclick=()=>{lang=b.dataset.lang;syncLangSeg();populateVoices();localStorage.setItem('tr_lang',lang);});
@@ -320,12 +348,13 @@ E.play.onclick=()=>{speaking?togglePause():start();};
 E.stop.onclick=stopAll; E.restart.onclick=restartAll; E.prev.onclick=prevSeg; E.next.onclick=nextSeg;
 E.back.onclick=()=>skip(-10); E.fwd.onclick=()=>skip(10);
 E.clear.onclick=()=>{stopAll();E.text.value='';E.reading.classList.remove('on');E.reading.innerHTML='';localStorage.removeItem('tr_text');E.status.textContent='Golit.';};
-E.rate.oninput=()=>{syncRate();localStorage.setItem('tr_rate',E.rate.value);if(engine==='neural')E.audio.playbackRate=1;};
+E.rate.oninput=()=>{syncRate();localStorage.setItem('tr_rate',E.rate.value);if(engine==='neural'){applyRate();updateTimes();}};
 E.text.oninput=()=>localStorage.setItem('tr_text',E.text.value);
 E.nVoice.onchange=()=>localStorage.setItem('tr_nvoice',E.nVoice.value);
 E.backend.onchange=()=>{backendURL=E.backend.value.trim().replace(/\/$/,'');localStorage.setItem('tr_backend',backendURL);pingBackend();};
 E.testBackend.onclick=()=>{backendURL=E.backend.value.trim().replace(/\/$/,'');pingBackend();};
 E.fetch.onclick=()=>fetchArticle(false);E.fetchPlay.onclick=()=>fetchArticle(true);
+E.file.onchange=handleFile;
 E.url.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();fetchArticle(true);}});
 E.seek.addEventListener('input',()=>{if(engine!=='neural'){return;}seeking=true;E.tCur.textContent=fmtT(E.seek.value);});
 E.seek.addEventListener('change',()=>{if(engine==='neural'&&speaking){E.audio.currentTime=+E.seek.value;}seeking=false;});
