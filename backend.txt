@@ -1,1 +1,1 @@
-https://shoes-cold-brunswick-should.trycloudflare.com
+https://api.trycloudflare.com
