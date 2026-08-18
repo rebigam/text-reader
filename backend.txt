@@ -1,1 +1,1 @@
-https://nodes-computer-the-vocabulary.trycloudflare.com
+https://api.trycloudflare.com
