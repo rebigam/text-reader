@@ -1,1 +1,1 @@
-https://controlled-fluid-libs-bachelor.trycloudflare.com
+https://api.trycloudflare.com
