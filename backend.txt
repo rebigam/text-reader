@@ -1,1 +1,1 @@
-https://past-binding-drainage-enhancement.trycloudflare.com
+https://api.trycloudflare.com
